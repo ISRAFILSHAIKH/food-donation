@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://food-donation-4akm.onrender.com',
+  baseURL: 'https://food-donation-4akm.onrender.com/api',
   headers: { 'Content-Type': 'application/json' },
 });
 
