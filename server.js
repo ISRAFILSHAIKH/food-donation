@@ -16,7 +16,7 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
   'http://127.0.0.1:3000',
-  'https://food-donation-flax.vercel.app',
+  'https://food-donation-frontend-delta.vercel.app',
 ];
 
 app.use(cors({
