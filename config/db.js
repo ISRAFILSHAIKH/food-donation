@@ -1,7 +1,5 @@
 const mongoose = require('mongoose');
 
-let MongoDB_URI = 'mongodb://localhost:27017/smart_food_donation';
-
 const connectDB = async () => {
   try {
     const conn = await mongoose.connect(MongoDB_URI, {
