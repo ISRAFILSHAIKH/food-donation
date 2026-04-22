@@ -57,24 +57,3 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
-// TEMPORARY - remove after seeding
-app.get('/api/seed', async (req, res) => {
-  try {
-    const bcrypt = require('bcryptjs');
-    const User = require('./models/User');
-    
-    await User.deleteMany({});
-    
-    const hash = (pw) => bcrypt.hashSync(pw, 10);
-    
-    await User.insertMany([
-      { name: 'Admin User', email: 'admin@foodshare.com', password: hash('admin123'), role: 'admin', isActive: true },
-      { name: 'Priya Sharma', email: 'donor@test.com', password: hash('donor123'), role: 'donor', isActive: true },
-      { name: 'Arjun Singh', email: 'volunteer@test.com', password: hash('vol123'), role: 'volunteer', isActive: true },
-    ]);
-    
-    res.json({ success: true, message: 'Database seeded! Remove this route now.' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
