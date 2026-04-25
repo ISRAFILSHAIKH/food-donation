@@ -39,7 +39,9 @@ const signup = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        state: user.state,
+        city: user.city
       }
     });
   } catch (error) {
@@ -86,7 +88,9 @@ const login = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        state: user.state,
+        city: user.city
       }
     });
 
@@ -108,6 +112,8 @@ const getMe = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        state: user.state,
+        city: user.city,
         createdAt: user.createdAt
       }
     });
