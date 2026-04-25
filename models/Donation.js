@@ -17,6 +17,17 @@ const DonationSchema = new mongoose.Schema({
     required: [true, 'Please provide pickup location'],
     trim: true
   },
+  // Structured location for matching
+  state: {
+    type: String,
+    required: [true, 'Please provide state'],
+    trim: true
+  },
+  city: {
+    type: String,
+    required: [true, 'Please provide city'],
+    trim: true
+  },
   expiryTime: {
     type: Date,
     required: [true, 'Please provide expiry time']
@@ -41,17 +52,10 @@ const DonationSchema = new mongoose.Schema({
     ref: 'User',
     default: null
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
-  }
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
 });
 
-// Update the updatedAt field on save
 DonationSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
   next();

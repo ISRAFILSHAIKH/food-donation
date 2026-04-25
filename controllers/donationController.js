@@ -1,30 +1,33 @@
 const Donation = require('../models/Donation');
+const User = require('../models/User');
 
 // @desc    Add new food donation
 // @route   POST /api/donations
 // @access  Private (Donor)
 const addDonation = async (req, res) => {
   try {
-    const { foodName, quantity, location, expiryTime, description } = req.body;
+    const { foodName, quantity, location, state, city, expiryTime, description } = req.body;
 
-    if (!foodName || !quantity || !location || !expiryTime) {
-      return res.status(400).json({ success: false, message: 'Please provide food name, quantity, location, and expiry time' });
+    if (!foodName || !quantity || !location || !state || !city || !expiryTime) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide food name, quantity, location, state, city, and expiry time'
+      });
     }
 
     const donation = await Donation.create({
-      foodName,
-      quantity,
-      location,
-      expiryTime,
-      description,
+      foodName, quantity, location,
+      state: state.trim(),
+      city: city.trim(),
+      expiryTime, description,
       donor: req.user.id
     });
 
-    await donation.populate('donor', 'name email');
+    await donation.populate('donor', 'name email state city');
 
     res.status(201).json({
       success: true,
-      message: 'Donation added successfully!',
+      message: 'Donation added successfully! Awaiting admin approval.',
       donation
     });
   } catch (error) {
@@ -38,7 +41,7 @@ const addDonation = async (req, res) => {
 const getMyDonations = async (req, res) => {
   try {
     const donations = await Donation.find({ donor: req.user.id })
-      .populate('assignedVolunteer', 'name email')
+      .populate('assignedVolunteer', 'name email state city')
       .sort({ createdAt: -1 });
 
     res.json({ success: true, count: donations.length, donations });
@@ -47,16 +50,36 @@ const getMyDonations = async (req, res) => {
   }
 };
 
-// @desc    Get all approved donations (for volunteers)
+// @desc    Get available donations filtered by volunteer's location (same state)
 // @route   GET /api/donations/available
 // @access  Private (Volunteer)
 const getAvailableDonations = async (req, res) => {
   try {
-    const donations = await Donation.find({ status: 'approved' })
-      .populate('donor', 'name email')
+    const volunteer = await User.findById(req.user.id);
+
+    if (!volunteer.state || !volunteer.city) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please update your location in your profile before viewing donations.'
+      });
+    }
+
+    // Match donations in the SAME STATE as volunteer (case-insensitive)
+    const stateRegex = new RegExp(`^${volunteer.state.trim()}$`, 'i');
+
+    const donations = await Donation.find({
+      status: 'approved',
+      state: stateRegex
+    })
+      .populate('donor', 'name email state city')
       .sort({ createdAt: -1 });
 
-    res.json({ success: true, count: donations.length, donations });
+    res.json({
+      success: true,
+      count: donations.length,
+      volunteerLocation: { state: volunteer.state, city: volunteer.city },
+      donations
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -68,8 +91,8 @@ const getAvailableDonations = async (req, res) => {
 const getAllDonations = async (req, res) => {
   try {
     const donations = await Donation.find()
-      .populate('donor', 'name email')
-      .populate('assignedVolunteer', 'name email')
+      .populate('donor', 'name email state city')
+      .populate('assignedVolunteer', 'name email state city')
       .sort({ createdAt: -1 });
 
     res.json({ success: true, count: donations.length, donations });
@@ -93,17 +116,13 @@ const reviewDonation = async (req, res) => {
       req.params.id,
       { status },
       { new: true, runValidators: true }
-    ).populate('donor', 'name email');
+    ).populate('donor', 'name email state city');
 
     if (!donation) {
       return res.status(404).json({ success: false, message: 'Donation not found' });
     }
 
-    res.json({
-      success: true,
-      message: `Donation ${status} successfully!`,
-      donation
-    });
+    res.json({ success: true, message: `Donation ${status} successfully!`, donation });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
