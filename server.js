@@ -12,27 +12,54 @@ connectDB();
 const app = express();
 
 // ── CORS — must come BEFORE any routes ──────────────────────────────────────
-const allowedOrigins = [
+const defaultAllowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
   'http://127.0.0.1:3000',
   'https://food-donation-frontend-delta.vercel.app',
 ];
 
-app.use(cors({
-  origin: function (origin, callback) {
+const envAllowedOrigins = [
+  process.env.FRONTEND_URL,
+  process.env.CLIENT_URL,
+  ...(process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean),
+].filter(Boolean);
+
+const allowedOrigins = [...new Set([...defaultAllowedOrigins, ...envAllowedOrigins])];
+
+const isAllowedVercelPreview = (origin) => {
+  try {
+    const { hostname, protocol } = new URL(origin);
+
+    return protocol === 'https:' &&
+      hostname.endsWith('.vercel.app') &&
+      hostname.startsWith('food-donation-frontend');
+  } catch (error) {
+    return false;
+  }
+};
+
+const corsOptions = {
+  origin(origin, callback) {
     // Allow requests with no origin (mobile apps, curl, Postman)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    callback(new Error(`CORS blocked for origin: ${origin}`));
+
+    if (allowedOrigins.includes(origin) || isAllowedVercelPreview(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+};
 
-// Handle preflight OPTIONS requests for ALL routes
-app.options('*', cors());
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 app.use(express.json());
 
@@ -50,7 +77,11 @@ app.get('/', (req, res) => {
 // Global error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ success: false, message: err.message || 'Server Error' });
+  const statusCode = err.message && err.message.startsWith('CORS blocked for origin:')
+    ? 403
+    : 500;
+
+  res.status(statusCode).json({ success: false, message: err.message || 'Server Error' });
 });
 
 const PORT = process.env.PORT || 5000;
