@@ -117,4 +117,25 @@ const getMe = async (req, res) => {
   }
 };
 
-module.exports = { signup, login, getMe };
+const updateLocation = async (req, res) => {
+  try {
+    const { state, city } = req.body;
+    if (!state || !city) {
+      return res.status(400).json({ success: false, message: 'Please provide state and city' });
+    }
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { state, city },
+      { new: true }
+    );
+    res.json({
+      success: true,
+      message: 'Location updated successfully!',
+      user: { id: user._id, name: user.name, email: user.email, role: user.role, state: user.state, city: user.city }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+module.exports = { signup, login, getMe, updateLocation }; // ← updateLocation must be here
